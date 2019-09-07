@@ -2,4 +2,4 @@ name: QQMinecraft
 main: com.ishland.bukkit.QQMinecraft.main.Launcher
 version: 0.0.1-SNAPSHOT
 author: ishland
-description: Private Plugin
+description: A plugin connects QQ and Spigot servers
