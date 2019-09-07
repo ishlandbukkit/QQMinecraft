@@ -11,15 +11,31 @@ public class MessageHandler {
     private Launcher plugin;
     private Long number;
     private Gson gson = new Gson();
+    private MessageThread thr;
 
     public MessageHandler(URI wsAddr, Long number, Launcher plugin) {
 	this.plugin = plugin;
 	this.number = number;
+	this.thr = new MessageThread(this);
+	thr.start();
 	wsClient = new WSClient(wsAddr, number, this.plugin);
-	wsClient.connect();
+	try {
+	    wsClient.connectBlocking();
+	} catch (InterruptedException e) {
+	}
     }
 
     public void send(String str) {
+	try {
+	    MessageThread.queue.put(str);
+	} catch (InterruptedException e) {
+	}
+	synchronized (MessageThread.queue) {
+	    MessageThread.queue.notifyAll();
+	}
+    }
+
+    public void sendNow(String str) {
 	Map<String, Object> params = new HashMap<>();
 	params.put("group_id", number);
 	params.put("message", str);
@@ -31,5 +47,10 @@ public class MessageHandler {
 
     public void stop() {
 	wsClient.close();
+	thr.setStopping(true);
+    }
+
+    public boolean isReady() {
+	return wsClient.isOpen();
     }
 }
