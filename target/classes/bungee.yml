@@ -1,0 +1,5 @@
+name: SendPlayerOnLag
+main: com.ishland.bungee.SendPlayerOnLag.main.Launcher
+version: 0.0.1-SNAPSHOT
+author: ishland
+description: Private Plugin
