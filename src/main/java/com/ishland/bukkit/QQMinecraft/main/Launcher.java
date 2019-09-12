@@ -14,6 +14,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerAdvancementDoneEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -23,7 +24,7 @@ import org.bukkit.plugin.java.JavaPlugin;
  *
  */
 public class Launcher extends JavaPlugin implements Listener {
-    MessageHandler msgHandler = null;
+    public MessageHandler msgHandler = null;
 
     @Override
     public Logger getLogger() {
@@ -78,8 +79,14 @@ public class Launcher extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
-	event.setKeepInventory(true);
+	// event.setKeepInventory(true);
 	msgHandler.send(event.getDeathMessage());
+    }
+
+    @EventHandler
+    public void onPlayerAdvancementDone(PlayerAdvancementDoneEvent event) {
+	msgHandler
+		.send(event.getPlayer().getName() + " got advancement: " + event.getAdvancement().getKey().toString());
     }
 
 }
