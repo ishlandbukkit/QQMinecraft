@@ -32,9 +32,6 @@
           <filters>
             <filter>
               <artifact>*:*</artifact>
-              <excludes>
-                <exclude>META-INF/</exclude>
-              </excludes>
             </filter>
           </filters>
         </configuration>
@@ -57,10 +54,6 @@
         <exclusion>
           <artifactId>commons-lang</artifactId>
           <groupId>commons-lang</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>guava</artifactId>
-          <groupId>com.google.guava</groupId>
         </exclusion>
         <exclusion>
           <artifactId>bungeecord-chat</artifactId>

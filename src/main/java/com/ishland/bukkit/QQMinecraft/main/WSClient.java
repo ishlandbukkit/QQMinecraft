@@ -4,7 +4,10 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.text.SimpleDateFormat;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.logging.Level;
 
 import org.apache.commons.lang.StringEscapeUtils;
@@ -26,9 +29,12 @@ public class WSClient extends WebSocketClient {
     private Launcher plugin;
     private static final JsonParser parser = new JsonParser();
     private Long number;
-    private SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private SimpleDateFormat format = new SimpleDateFormat(
+	    "yyyy-MM-dd HH:mm:ss");
     private boolean closed = false;
     private long lastDown = System.currentTimeMillis();
+
+    public Object blockingLock = new Object();
 
     public WSClient(URI serverUri, Long number, Launcher plugin) {
 	super(serverUri);
@@ -49,9 +55,16 @@ public class WSClient extends WebSocketClient {
     @Override
     public void onOpen(ServerHandshake handshakedata) {
 	plugin.getLogger().info("Connection started");
-	if (closed)
-	    plugin.msgHandler.send("Connection restarted. It was down for "
-		    + String.valueOf(System.currentTimeMillis() - lastDown) + "ms");
+	if (closed) {
+	    Launcher.msgHandler.send("Connection restarted. It was down for "
+		    + String.valueOf(System.currentTimeMillis() - lastDown)
+		    + "ms");
+	    Bukkit.broadcastMessage(
+		    "[QQMinecraft] Connection restarted. It was down for "
+			    + String.valueOf(
+				    System.currentTimeMillis() - lastDown)
+			    + "ms");
+	}
 	closed = false;
     }
 
@@ -64,51 +77,124 @@ public class WSClient extends WebSocketClient {
 	}
 
 	JsonObject jsonObject = element.getAsJsonObject();
-	if (jsonObject.get("retcode") != null)
+
+	// API response
+	if (jsonObject.get("retcode") != null) {
+	    APIResponse response = new APIResponse();
+	    response.retcode = jsonObject.get("retcode").getAsInt();
+	    response.status = jsonObject.get("status").getAsString();
+	    if (jsonObject.get("data").isJsonObject()) {
+		Iterator<Entry<String, JsonElement>> it = jsonObject.get("data")
+			.getAsJsonObject().entrySet().iterator();
+		Map<String, JsonElement> data = new HashMap<>();
+		while (it.hasNext()) {
+		    Entry<String, JsonElement> entry = it.next();
+		    data.put(entry.getKey(), entry.getValue());
+		}
+		it = null;
+		response.data = data;
+		data = null;
+	    }
+	    BlockingLock.submitResult(response);
+	    response = null;
 	    return;
+	}
+
+	// Not a API response
 	if (!jsonObject.get("post_type").getAsString().equals("message")
 		|| !jsonObject.get("message_type").getAsString().equals("group")
-		|| jsonObject.get("group_id").getAsLong() != number.longValue()) {
+		|| jsonObject.get("group_id").getAsLong() != number
+			.longValue()) {
 	    // plugin.getLogger().info(String.valueOf(jsonObject.get("post_type").getAsString()
 	    // != "message")
-	    // + String.valueOf(jsonObject.get("message_type").getAsString() != "group"));
+	    // + String.valueOf(jsonObject.get("message_type").getAsString() !=
+	    // "group"));
 	    return;
 	}
 
 	if (jsonObject.get("sub_type").getAsString().equals("normal")) {
 	    // plugin.getLogger().info("inside");
 	    try {
-		boardcastMessage(new ComponentBuilder("[QQ]").color(ChatColor.GREEN).append(" ")
-			.append("["
-				+ (jsonObject.get("sender").getAsJsonObject().get("title").getAsString().length() > 0
-					? jsonObject.get("sender").getAsJsonObject().get("title").getAsString()
-					: jsonObject.get("sender").getAsJsonObject().get("level").getAsString())
-				+ "]")
-			.color(ChatColor.BLUE).append(" ").append("<").color(ChatColor.WHITE)
-			.append((jsonObject.get("sender").getAsJsonObject().get("card").getAsString().length() > 0
-				? jsonObject.get("sender").getAsJsonObject().get("card").getAsString()
-				: jsonObject.get("sender").getAsJsonObject().get("nickname").getAsString()))
-			.color((!jsonObject.get("sender").getAsJsonObject().get("role").getAsString().equals("member")
-				? ChatColor.RED
-				: ChatColor.WHITE))
-			.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-				new ComponentBuilder("QQ: " + String
-					.valueOf(jsonObject.get("sender").getAsJsonObject().get("user_id").getAsLong()))
-						.append("\n")
-						.append("Sent at " + format.format(jsonObject.get("time").getAsLong()))
-						.create()))
-			.append(">").color(ChatColor.WHITE).append(" ")
-			.append(StringEscapeUtils
-				.unescapeHtml(URLDecoder.decode(jsonObject.get("message").getAsString(), "UTF-8"))
-				.replaceAll("\\[CQ:*\\]", "[Unsupported]"))
-			.color(ChatColor.WHITE).create());
-	    } catch (UnsupportedEncodingException e) {
+		if (URLDecoder.decode(jsonObject.get("message").getAsString(),
+			"UTF-8").startsWith("/"))
+		    new Thread() {
+			public void run() {
+			    try {
+				Launcher.msgHandler.processCommand(URLDecoder
+					.decode(jsonObject.get("message")
+						.getAsString(), "UTF-8")
+					.substring(1));
+			    } catch (UnsupportedEncodingException e) {
+			    }
+			}
+		    }.start();
+		else
+		    boardcastMessage(new ComponentBuilder("[QQ]")
+			    .color(ChatColor.GREEN).append(" ")
+			    .append("["
+				    + (jsonObject.get("sender")
+					    .getAsJsonObject().get("title")
+					    .getAsString().length() > 0
+						    ? jsonObject.get("sender")
+							    .getAsJsonObject()
+							    .get("title")
+							    .getAsString()
+						    : jsonObject.get("sender")
+							    .getAsJsonObject()
+							    .get("level")
+							    .getAsString())
+				    + "]")
+			    .color(ChatColor.BLUE).append(" ").append("<")
+			    .color(ChatColor.WHITE)
+			    .append((jsonObject.get("sender").getAsJsonObject()
+				    .get("card").getAsString().length() > 0
+					    ? jsonObject.get("sender")
+						    .getAsJsonObject()
+						    .get("card").getAsString()
+					    : jsonObject.get("sender")
+						    .getAsJsonObject()
+						    .get("nickname")
+						    .getAsString()))
+			    .color((!jsonObject.get("sender").getAsJsonObject()
+				    .get("role").getAsString().equals("member")
+					    ? ChatColor.RED
+					    : ChatColor.WHITE))
+			    .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+				    new ComponentBuilder("QQ: " + String
+					    .valueOf(jsonObject.get("sender")
+						    .getAsJsonObject()
+						    .get("user_id")
+						    .getAsLong()))
+							    .append("\n")
+							    .append("Sent at "
+								    + format.format(
+									    jsonObject
+										    .get("time")
+										    .getAsLong()
+										    * 1000L))
+							    .create()))
+			    .append(">").color(ChatColor.WHITE).append(" ")
+			    .reset().append(
+				    StringEscapeUtils
+					    .unescapeHtml(URLDecoder.decode(
+						    jsonObject.get("message")
+							    .getAsString(),
+						    "UTF-8"))
+					    .replaceAll("\\[CQ:*\\]",
+						    "[Unsupported]"))
+			    .color(ChatColor.WHITE).create());
+
+	    } catch (Exception e) {
+		plugin.getLogger().log(Level.WARNING,
+			"Error while processing message", e);
 	    }
 	    return;
 	}
 	if (jsonObject.get("sub_type").getAsString().equals("notice")) {
-	    boardcastMessage(new ComponentBuilder("[QQ]").color(ChatColor.GREEN).append(" ").append("<Notice>")
-		    .color(ChatColor.WHITE).append(" ").append(jsonObject.get("message").getAsString()).create());
+	    boardcastMessage(new ComponentBuilder("[QQ]").color(ChatColor.GREEN)
+		    .append(" ").append("<Notice>").color(ChatColor.WHITE)
+		    .append(" ").append(jsonObject.get("message").getAsString())
+		    .create());
 	    return;
 	}
     }
@@ -116,8 +202,12 @@ public class WSClient extends WebSocketClient {
     @Override
     public void onClose(int code, String reason, boolean remote) {
 	if (reason.length() > 0 || remote) {
-	    plugin.getLogger().info("Connection closed: " + reason + ", reconnecting...");
-	    Bukkit.getScheduler().runTaskLater(plugin, () -> this.reconnect(), 2);
+	    plugin.getLogger()
+		    .info("Connection closed: " + reason + ", reconnecting...");
+	    Bukkit.broadcastMessage("[QQMinecraft] Connection closed: " + reason
+		    + ", reconnecting...");
+	    Bukkit.getScheduler().runTaskLater(plugin, () -> this.reconnect(),
+		    2);
 	    if (!closed) {
 		closed = true;
 		lastDown = System.currentTimeMillis();
@@ -129,7 +219,8 @@ public class WSClient extends WebSocketClient {
 
     @Override
     public void onError(Exception ex) {
-	plugin.getLogger().log(Level.SEVERE, "Exception in connection to coolq", ex);
+	plugin.getLogger().log(Level.SEVERE, "Exception in connection to coolq",
+		ex);
     }
 
 }
