@@ -5,13 +5,14 @@ import java.util.Iterator;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import com.ishland.bukkit.QQMinecraft.main.CommandHandler;
+import com.ishland.bukkit.QQMinecraft.api.CommandHandler;
 import com.ishland.bukkit.QQMinecraft.main.Launcher;
+import com.ishland.bukkit.QQMinecraft.main.QQSender;
 
 public class ListHandler implements CommandHandler {
 
     @Override
-    public boolean onCommand(String[] args) {
+    public boolean onCommand(String[] args, QQSender sender) {
 	String result = "";
 	result += "当前有 " + Bukkit.getOnlinePlayers().size() + " 个玩家在线，最大在线人数： "
 		+ Bukkit.getMaxPlayers() + "\n";

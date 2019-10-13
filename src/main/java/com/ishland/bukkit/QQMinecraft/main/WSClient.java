@@ -123,7 +123,9 @@ public class WSClient extends WebSocketClient {
 				Launcher.msgHandler.processCommand(URLDecoder
 					.decode(jsonObject.get("message")
 						.getAsString(), "UTF-8")
-					.substring(1));
+					.substring(1),
+					jsonObject.get("sender")
+						.getAsJsonObject());
 			    } catch (UnsupportedEncodingException e) {
 			    }
 			}

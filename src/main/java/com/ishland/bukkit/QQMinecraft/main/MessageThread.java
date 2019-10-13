@@ -40,18 +40,15 @@ public class MessageThread extends Thread {
 		    }
 		    continue;
 		}
-		APIResponse response = BlockingLock.waitForResult();
-		if (response == null) {
-		    handler.plugin.getLogger().warning(
-			    "Error while sending message: no response, retrying");
-		    continue;
-		}
-		if (response.retcode != 0 && response.retcode != 1) {
-		    handler.plugin.getLogger()
-			    .warning("Error while sending message: "
-				    + response.status + ", retrying");
-		    continue;
-		}
+		/*
+		 * APIResponse response = BlockingLock.waitForResult(); if
+		 * (response == null) { handler.plugin.getLogger().warning(
+		 * "Error while sending message: no response, retrying");
+		 * continue; } if (response.retcode != 0 && response.retcode !=
+		 * 1) { handler.plugin.getLogger()
+		 * .warning("Error while sending message: " + response.status +
+		 * ", retrying"); continue; }
+		 */
 		queue.poll();
 		try {
 		    Thread.sleep(500);

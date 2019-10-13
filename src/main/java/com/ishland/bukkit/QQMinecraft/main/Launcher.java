@@ -6,6 +6,7 @@ package com.ishland.bukkit.QQMinecraft.main;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -29,6 +30,10 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.reflections.Reflections;
+
+import com.google.common.base.Charsets;
+import com.google.common.io.CharStreams;
+import com.ishland.bukkit.QQMinecraft.api.CommandHandler;
 
 /**
  * @author ishland
@@ -99,8 +104,8 @@ public class Launcher extends JavaPlugin implements Listener {
 		    continue;
 		}
 		InputStream in = zipFile.getInputStream(entry);
-		while (in.available() > 0)
-		    addonsJarPath += in.read();
+		addonsJarPath = CharStreams
+			.toString(new InputStreamReader(in, Charsets.UTF_8));
 		in.close();
 		zipFile.close();
 	    } catch (IOException e) {
@@ -125,6 +130,7 @@ public class Launcher extends JavaPlugin implements Listener {
     }
 
     private void registerHandlers(String packageName, ClassLoader loader) {
+	getLogger().info("Looking for CommandHandlers in " + packageName);
 	Reflections reflections = null;
 	if (loader == null)
 	    reflections = new Reflections(packageName);
@@ -140,7 +146,11 @@ public class Launcher extends JavaPlugin implements Listener {
 	    Class<? extends CommandHandler> theClass = itNames.next();
 	    getLogger().info("Loading handler " + theClass.getName());
 	    try {
-		msgHandler.commandHandlerList.add((theClass.newInstance()));
+		CommandHandler current = theClass.newInstance();
+		if (current.commandName() == null
+			|| current.description() == null)
+		    throw new RuntimeException("Not a handler");
+		msgHandler.commandHandlerList.add((current));
 	    } catch (Exception e) {
 		getLogger().log(Level.WARNING,
 			"Cannot load handler " + theClass.getName(), e);
