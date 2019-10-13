@@ -1,8 +1,8 @@
 package com.ishland.bukkit.QQMinecraft.main;
 
-import java.util.NoSuchElementException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 public class MessageThread extends Thread {
 
@@ -18,43 +18,23 @@ public class MessageThread extends Thread {
     }
 
     public void run() {
-	while (true) {
-	    synchronized (queue) {
-		try {
-		    queue.wait();
-		} catch (InterruptedException e) {
-		}
+	try {
+	    Thread.sleep(1000);
+	} catch (InterruptedException e2) {
+	}
+	while (!isStopping) {
+	    if (!handler.isReady())
+		continue;
+	    String result = null;
+	    try {
+		result = queue.poll(1, TimeUnit.SECONDS);
+	    } catch (InterruptedException e1) {
 	    }
-	    while (!handler.isReady())
-		try {
-		    Thread.sleep(100);
-		} catch (InterruptedException e) {
-		}
-	    while (!queue.isEmpty()) {
-		try {
-		    handler.sendNow(queue.element());
-		} catch (NoSuchElementException e) {
-		    try {
-			Thread.sleep(50);
-		    } catch (InterruptedException e1) {
-		    }
-		    continue;
-		}
-		/*
-		 * APIResponse response = BlockingLock.waitForResult(); if
-		 * (response == null) { handler.plugin.getLogger().warning(
-		 * "Error while sending message: no response, retrying");
-		 * continue; } if (response.retcode != 0 && response.retcode !=
-		 * 1) { handler.plugin.getLogger()
-		 * .warning("Error while sending message: " + response.status +
-		 * ", retrying"); continue; }
-		 */
-		queue.poll();
-		try {
-		    Thread.sleep(500);
-		} catch (InterruptedException e) {
-		}
-	    }
+	    if (result == null)
+		continue;
+	    for (int i = 0; !queue.isEmpty() && i < 20; i++)
+		result += "\n" + queue.poll();
+	    handler.sendNow(result);
 	}
     }
 

@@ -107,9 +107,6 @@ public class MessageHandler {
 	    MessageThread.queue.put(str);
 	} catch (InterruptedException e) {
 	}
-	synchronized (MessageThread.queue) {
-	    MessageThread.queue.notifyAll();
-	}
     }
 
     public void sendNow(String str) {
