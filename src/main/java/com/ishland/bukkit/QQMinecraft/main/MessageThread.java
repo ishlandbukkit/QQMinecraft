@@ -1,12 +1,18 @@
 package com.ishland.bukkit.QQMinecraft.main;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
-public class MessageThread extends Thread {
+import org.java_websocket.exceptions.WebsocketNotConnectedException;
 
-    public static BlockingQueue<String> queue = new LinkedBlockingQueue<>();
+public class MessageThread extends Thread {
+    public static final int LENGTH_HARD_LIMIT = 2560;
+
+    public static BlockingDeque<String> queue = new LinkedBlockingDeque<>();
 
     private boolean isStopping = false;
 
@@ -18,24 +24,79 @@ public class MessageThread extends Thread {
     }
 
     public void run() {
-	try {
-	    Thread.sleep(1000);
-	} catch (InterruptedException e2) {
-	}
-	while (!isStopping) {
+	while (!isStopping && handler.plugin.isEnabled()) {
 	    if (!handler.isReady())
 		continue;
-	    String result = null;
+	    String result = "";
+	    List<String> arr = new ArrayList<>();
+	    int currentLength = 0;
 	    try {
-		result = queue.poll(1, TimeUnit.SECONDS);
-	    } catch (InterruptedException e1) {
+		for (String current = queue.poll(100,
+			TimeUnit.MILLISECONDS); current != null; current = queue
+				.poll(100, TimeUnit.MILLISECONDS)) {
+		    if (current.length() > MessageThread.LENGTH_HARD_LIMIT
+			    && arr.size() == 0) {
+			arr.add(current.substring(0,
+				MessageThread.LENGTH_HARD_LIMIT));
+			queue.putFirst(current
+				.substring(MessageThread.LENGTH_HARD_LIMIT));
+			currentLength += MessageThread.LENGTH_HARD_LIMIT;
+			break;
+		    }
+		    currentLength += current.length();
+		    if (currentLength > MessageThread.LENGTH_HARD_LIMIT) {
+			queue.putFirst(current);
+			break;
+		    }
+		    arr.add(current);
+		}
+	    } catch (InterruptedException e) {
+		reInsert(arr);
 	    }
-	    if (result == null)
+	    for (String str : arr)
+		result += str + "\n";
+	    if (result.isEmpty())
 		continue;
-	    for (int i = 0; !queue.isEmpty() && i < 20; i++)
-		result += "\n" + queue.poll();
-	    handler.sendNow(result);
+	    result = result.substring(0, result.length() - 1);
+	    try {
+		handler.sendNow(result);
+	    } catch (WebsocketNotConnectedException e) {
+		handler.plugin.getLogger().warning(
+			"Error while sending message: not connected, retrying");
+		reInsert(arr);
+		continue;
+	    }
+
+	    APIResponse response = BlockingLock.waitForResult();
+	    if (response == null) {
+		handler.plugin.getLogger().warning(
+			"Error while sending message: no response, retrying");
+		reInsert(arr);
+		continue;
+	    }
+	    if (response.retcode != 0 && response.retcode != 1) {
+		handler.plugin.getLogger()
+			.warning("Error while sending message: "
+				+ response.status + "(" + response.retcode
+				+ "), retrying");
+		reInsert(arr);
+		continue;
+	    }
 	}
+	handler.stop();
+	handler = null;
+	Launcher.msgHandler = null;
+    }
+
+    private void reInsert(List<String> list) {
+	Collections.reverse(list);
+	for (String str : list)
+	    try {
+		queue.putFirst(str);
+	    } catch (InterruptedException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	    }
     }
 
     /**

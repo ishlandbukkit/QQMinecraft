@@ -2,4 +2,9 @@ name: QQMinecraft
 main: com.ishland.bukkit.QQMinecraft.main.Launcher
 version: 0.0.1-SNAPSHOT
 author: ishland
+load: startup
 description: A plugin connects QQ and Spigot servers
+softdepend: 
+- PlaceholderAPI
+- ProtocolSupport
+- ViaVersion

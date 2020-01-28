@@ -17,12 +17,18 @@ public class ExecHandler implements CommandHandler {
 	    Launcher.msgHandler.send("bash: exec: Permission denied");
 	    return true;
 	}
+	if (args.length > 0 && args[0].equals("op")) {
+	    Launcher.msgHandler.send("你在想peach");
+	    return true;
+	}
 	command = "";
 	for (String cmdpart : args)
 	    command += cmdpart + " ";
 	CommandSender s = new AConsoleCommandSender();
 	Bukkit.getScheduler().runTaskLater(Launcher.msgHandler.plugin,
 		() -> Bukkit.getServer().dispatchCommand(s, command), 1);
+	Launcher.msgHandler.plugin.getLogger()
+		.info(sender.user_id + " issued console command: " + command);
 	return true;
     }
 

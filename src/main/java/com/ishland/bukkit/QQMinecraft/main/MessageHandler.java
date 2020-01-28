@@ -125,6 +125,6 @@ public class MessageHandler {
     }
 
     public boolean isReady() {
-	return wsClient.isOpen();
+	return wsClient != null && wsClient.isOpen();
     }
 }

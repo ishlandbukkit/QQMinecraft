@@ -22,7 +22,7 @@ public class BlockingLock {
     public static APIResponse waitForResult() {
 	APIResponse result = null;
 	try {
-	    result = queue.poll(20, TimeUnit.SECONDS);
+	    result = queue.poll(5, TimeUnit.SECONDS);
 	} catch (InterruptedException e) {
 	}
 	return result;
