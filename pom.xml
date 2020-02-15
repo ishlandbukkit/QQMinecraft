@@ -48,12 +48,6 @@
 			<version>2.10.4</version>
 			<scope>provided</scope>
 		</dependency>
-		<!-- ProtocolSupport -->
-		<dependency>
-			<groupId>com.github.ProtocolSupport</groupId>
-			<artifactId>ProtocolSupport</artifactId>
-			<version>03cd0161f6</version>
-		</dependency>
 		<!-- Bukkit end -->
 		<dependency>
 			<groupId>org.java-websocket</groupId>
@@ -64,11 +58,18 @@
 			<groupId>com.google.code.gson</groupId>
 			<artifactId>gson</artifactId>
 			<version>2.8.5</version>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.reflections</groupId>
 			<artifactId>reflections</artifactId>
 			<version>0.9.11</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.9</version>
 		</dependency>
 	</dependencies>
 	<build>
@@ -90,8 +91,6 @@
 					<artifactSet>
 						<excludes>
 							<exclude>com.google.guava:guava</exclude>
-							<exclude>com.github.ProtocolSupport:ProtocolSupport</exclude>
-						<exclude>it.unimi.dsi:fastutil</exclude>
 						</excludes>
 					</artifactSet>
 				</configuration>

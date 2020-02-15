@@ -13,6 +13,8 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
@@ -43,6 +45,7 @@ import com.ishland.bukkit.QQMinecraft.api.CommandHandler;
 public class Launcher extends JavaPlugin implements Listener {
 	public static MessageHandler msgHandler = null;
 	public static String serverVersion;
+	public static boolean isCompletelyStarted = false;
 
 	public Logger getPluginLogger() {
 		return super.getLogger();
@@ -50,12 +53,13 @@ public class Launcher extends JavaPlugin implements Listener {
 
 	@Override
 	public void onEnable() {
+		isCompletelyStarted = false;
 		serverVersion = super.getServer().getClass().getPackage().getName().replace(".", ",").split(",")[3];
 		getLogger().info("Detected server version: " + serverVersion);
 		this.saveDefaultConfig();
 		this.reloadConfig();
 		Bukkit.getPluginManager().registerEvents(this, this);
-		Bukkit.getScheduler().runTaskLater(this, () -> msgHandler.send("Server started!"), 20);
+		Bukkit.getScheduler().runTaskLater(this, () -> msgHandler.send("服务器启动完成！"), 20);
 		try {
 			Class.forName("org.bukkit.event.raid.RaidEvent");
 			getLogger().info("Enabling raid event for " + serverVersion);
@@ -68,25 +72,35 @@ public class Launcher extends JavaPlugin implements Listener {
 		if (number.intValue() == 0) {
 			getLogger().log(Level.SEVERE, "Error while reading configuration");
 			Bukkit.getPluginManager().disablePlugin(this);
+			return;
 		}
 		try {
 			wsURI = new URI(this.getConfig().getString("ws"));
 		} catch (URISyntaxException e) {
 			getLogger().log(Level.SEVERE, "Error while reading configuration", e);
 			Bukkit.getPluginManager().disablePlugin(this);
+			return;
 		}
 		msgHandler = new MessageHandler(wsURI, number, this);
 		loadAddons();
 		registerHandlers("com.ishland.bukkit.QQMinecraft.commandHandler", null);
 		showAddonDetails();
-		msgHandler.send("Plugin started!");
+		msgHandler.send("插件启动完成!");
+		new Timer().schedule(new TimerTask() {
+
+			@Override
+			public void run() {
+				isCompletelyStarted = true;
+			}
+
+		}, 100);
 		getLogger().info("Enabled");
 	}
 
 	@Override
 	public void onDisable() {
 		if (msgHandler != null) {
-			msgHandler.send("Plugin stopped!");
+			msgHandler.send("插件已关闭");
 		}
 		getLogger().info("Disabled");
 	}
@@ -158,7 +172,7 @@ public class Launcher extends JavaPlugin implements Listener {
 
 	private void showAddonDetails() {
 		String str = "";
-		str += "Loaded " + msgHandler.commandHandlerList.size() + " handlers: \n";
+		str += "成功加载 " + msgHandler.commandHandlerList.size() + " 个命令处理器: \n";
 		Iterator<CommandHandler> it = msgHandler.commandHandlerList.iterator();
 		while (it.hasNext())
 			str += it.next().getClass().getName() + "\n";
@@ -169,32 +183,32 @@ public class Launcher extends JavaPlugin implements Listener {
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onAsyncPlayerPreLogin(AsyncPlayerPreLoginEvent event) {
 		if (event.getLoginResult() != Result.ALLOWED)
-			msgHandler.send(event.getName() + " [" + event.getAddress() + "] was about to join the server but failed: "
-					+ event.getKickMessage());
+			msgHandler.send(event.getName() + " 尝试进入服务器但是被移出: " + event.getKickMessage());
 	}
 
 	@EventHandler
 	public void onPlayerJoin(PlayerJoinEvent event) {
-		msgHandler.send(event.getPlayer().getName() + " joined the server ");
+		msgHandler.send(event.getPlayer().getName() + " 进入了服务器 ");
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onAsyncPlayerChat(AsyncPlayerChatEvent event) {
 		if (event.isCancelled()) {
-			msgHandler.send("Ignoring cancelled chat from " + event.getPlayer().getName());
+			// msgHandler.send("Ignoring cancelled chat from " +
+			// event.getPlayer().getName());
 			return;
 		}
-		msgHandler.send(event.getPlayer().getName() + " said: " + event.getMessage());
+		msgHandler.send(event.getPlayer().getName() + ": " + event.getMessage());
 	}
 
 	@EventHandler
 	public void onPlayerKick(PlayerKickEvent event) {
-		msgHandler.send(event.getPlayer().getName() + " lost connection: " + event.getReason());
+		msgHandler.send(event.getPlayer().getName() + " 被移出服务器: " + event.getReason());
 	}
 
 	@EventHandler
 	public void onPlayerQuit(PlayerQuitEvent event) {
-		msgHandler.send(event.getPlayer().getName() + " left the server");
+		msgHandler.send(event.getPlayer().getName() + " 离开了服务器");
 	}
 
 	@EventHandler

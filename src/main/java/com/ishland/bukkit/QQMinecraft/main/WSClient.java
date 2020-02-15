@@ -1,6 +1,5 @@
 package com.ishland.bukkit.QQMinecraft.main;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.text.SimpleDateFormat;
@@ -56,13 +55,15 @@ public class WSClient extends WebSocketClient {
 		if (!plugin.isEnabled()) {
 			return;
 		}
-		plugin.getLogger().info("Connection started");
-		if (closed) {
-			Launcher.msgHandler.send("Connection restarted. It was down for "
-					+ String.valueOf(System.currentTimeMillis() - lastDown) + "ms");
-			Bukkit.broadcastMessage("[QQMinecraft] Connection restarted. It was down for "
-					+ String.valueOf(System.currentTimeMillis() - lastDown) + "ms");
+		if (!Launcher.msgHandler.thr.isAlive()) {
+			Launcher.msgHandler.thr = new MessageThread(Launcher.msgHandler);
+			Launcher.msgHandler.thr.start();
 		}
+		if (closed) {
+			plugin.getLogger().info("Connection restarted. It was down for "
+					+ String.valueOf(System.currentTimeMillis() - lastDown) + "ms");
+		} else
+			plugin.getLogger().info("Connection started");
 		closed = false;
 	}
 
@@ -118,12 +119,9 @@ public class WSClient extends WebSocketClient {
 				if (URLDecoder.decode(jsonObject.get("message").getAsString(), "UTF-8").startsWith("/"))
 					new Thread() {
 						public void run() {
-							try {
-								Launcher.msgHandler.processCommand(URLDecoder
-										.decode(jsonObject.get("message").getAsString(), "UTF-8").substring(1),
-										jsonObject.get("sender").getAsJsonObject());
-							} catch (UnsupportedEncodingException e) {
-							}
+							Launcher.msgHandler.processCommand(StringEscapeUtils
+									.unescapeHtml(jsonObject.get("message").getAsString()).substring(1),
+									jsonObject.get("sender").getAsJsonObject());
 						}
 					}.start();
 				else
@@ -145,8 +143,7 @@ public class WSClient extends WebSocketClient {
 															+ format.format(jsonObject.get("time").getAsLong() * 1000L))
 													.create()))
 							.append(">").color(ChatColor.WHITE).append(" ").reset()
-							.append(StringEscapeUtils
-									.unescapeHtml(URLDecoder.decode(jsonObject.get("message").getAsString(), "UTF-8"))
+							.append(StringEscapeUtils.unescapeHtml(jsonObject.get("message").getAsString())
 									.replaceAll("\\[CQ:*\\]", "[Unsupported]"))
 							.color(ChatColor.WHITE).create());
 
@@ -169,8 +166,7 @@ public class WSClient extends WebSocketClient {
 		}
 		if (reason.length() > 0 || remote) {
 			plugin.getLogger().info("Connection closed: " + reason + ", reconnecting...");
-			Bukkit.broadcastMessage("[QQMinecraft] Connection closed: " + reason + ", reconnecting...");
-			Bukkit.getScheduler().runTaskLater(plugin, () -> this.reconnect(), 2);
+			new Thread(() -> this.reconnect()).start();
 			if (!closed) {
 				closed = true;
 				lastDown = System.currentTimeMillis();
