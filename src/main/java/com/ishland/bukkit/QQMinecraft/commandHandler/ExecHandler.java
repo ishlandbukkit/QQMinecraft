@@ -13,6 +13,10 @@ public class ExecHandler implements CommandHandler {
 
 	@Override
 	public boolean onCommand(String[] args, QQSender sender) {
+		if(Launcher.msgHandler.plugin.getConfig().getBoolean("disable-console", false)){
+			Launcher.msgHandler.send("bash: exec: disabled");
+			return true;
+		}
 		if (sender.role.equals("member")) {
 			Launcher.msgHandler.send("bash: exec: Permission denied");
 			return true;

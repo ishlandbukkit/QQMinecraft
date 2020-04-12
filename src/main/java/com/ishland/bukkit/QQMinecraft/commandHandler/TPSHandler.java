@@ -12,8 +12,17 @@ public class TPSHandler implements CommandHandler {
 
 	@Override
 	public boolean onCommand(String[] args, QQSender sender) {
-		Launcher.msgHandler.send("TPS from last 1m, 5m, 15m: " + Arrays.toString(Bukkit.getServer().getTPS()));
+		try {
+			Launcher.msgHandler.send("TPS from last 1m, 5m, 15m: " + Arrays.toString(Bukkit.getServer().getTPS()));
+		} catch (NoSuchMethodError e) {
+			Launcher.msgHandler
+					.send("Cannot find method: " + e.getMessage() + ", redirecting to console command \"tps\"");
+			sender.role = "redirect";
+			new ExecHandler().onCommand(new String[] { "tps" }, sender);
+			return true;
+		}
 		return true;
+
 	}
 
 	@Override

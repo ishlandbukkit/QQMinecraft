@@ -11,11 +11,12 @@ public class HelpHandler implements CommandHandler {
 	@Override
 	public boolean onCommand(String[] args, QQSender sender) {
 		String result = "";
+		String prefix = Launcher.msgHandler.plugin.getConfig().getString("command-prefix", "/");
 		result += "可用的命令：\n";
 		Iterator<CommandHandler> it = Launcher.msgHandler.commandHandlerList.iterator();
 		while (it.hasNext()) {
 			CommandHandler handler = it.next();
-			result += "/" + handler.commandName() + " : " + handler.description() + "\n";
+			result += prefix + handler.commandName() + " : " + handler.description() + "\n";
 		}
 		Launcher.msgHandler.send(result);
 		return true;
