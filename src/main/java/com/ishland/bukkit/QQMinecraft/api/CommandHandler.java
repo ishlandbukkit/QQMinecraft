@@ -10,4 +10,6 @@ public interface CommandHandler {
 
     String description();
 
+    default void onDisable() {}
+
 }

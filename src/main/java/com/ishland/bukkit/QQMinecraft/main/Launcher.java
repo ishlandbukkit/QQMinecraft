@@ -15,10 +15,6 @@ import org.bukkit.event.player.*;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent.Result;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.reflections.Reflections;
-import org.reflections.scanners.SubTypesScanner;
-import org.reflections.util.ClasspathHelper;
-import org.reflections.util.ConfigurationBuilder;
-import org.reflections.util.FilterBuilder;
 
 import java.io.File;
 import java.io.IOException;
@@ -104,6 +100,14 @@ public class Launcher extends JavaPlugin implements Listener {
     @Override
     public void onDisable() {
         if (msgHandler != null) {
+            for(CommandHandler handler: msgHandler.commandHandlerList){
+                if(handler != null)
+                    try {
+                        handler.onDisable();
+                    } catch (Throwable e){
+                        e.printStackTrace();
+                    }
+            }
             msgHandler.send("插件已关闭");
         }
         getLogger().info("Disabled");
@@ -152,12 +156,10 @@ public class Launcher extends JavaPlugin implements Listener {
     private void registerHandlers(String packageName, ClassLoader loader) {
         getLogger().info("Looking for CommandHandlers in " + packageName);
         Reflections reflections;
-        final ConfigurationBuilder configuration = new ConfigurationBuilder()
-                .setUrls(ClasspathHelper.forPackage(packageName))
-                .setScanners(new SubTypesScanner());
-        if(loader != null)
-            configuration.addClassLoader(loader);
-        reflections = new Reflections(configuration);
+        if (loader != null)
+            reflections = new Reflections(packageName, loader);
+        else
+            reflections = new Reflections(packageName);
         Set<Class<? extends CommandHandler>> allClasses = reflections.getSubTypesOf(CommandHandler.class);
         if (allClasses == null)
             return;
