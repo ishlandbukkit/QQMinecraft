@@ -74,7 +74,7 @@ public class WSClient extends WebSocketClient {
         }
         JsonElement element = parser.parse(message);
         if (!element.isJsonObject()) {
-            plugin.getLogger().warning("Invaild message");
+            plugin.getLogger().warning("Invalid message");
             return;
         }
 

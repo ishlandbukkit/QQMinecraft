@@ -15,7 +15,7 @@ public class FlushHandler implements CommandHandler {
         synchronized (MessageThread.queue) {
             int entries = MessageThread.queue.size();
             MessageThread.queue.clear();
-            Launcher.msgHandler.send("Flush complete, removed " + entries + " entries.");
+            Launcher.msgHandler.send("清理完成, 共清理了 " + entries + " 项.");
             return true;
         }
     }
@@ -27,6 +27,6 @@ public class FlushHandler implements CommandHandler {
 
     @Override
     public String description() {
-        return "[管理员&群主] Flush message queue";
+        return "[管理员&群主] 清理消息队列";
     }
 }

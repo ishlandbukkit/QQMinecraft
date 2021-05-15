@@ -27,8 +27,13 @@ public class ProtocolVersions {
 	map.put(485, "1.14.2");
 	map.put(490, "1.14.3");
 	map.put(498, "1.14.4");
-	map.put(565, "1.15-pre1");
-	map.put(566, "1.15-pre2");
-	map.put(567, "1.15-pre3");
+	map.put(573, "1.15");
+	map.put(575, "1.15.1");
+	map.put(578, "1.15.2");
+	map.put(735, "1.16");
+	map.put(736, "1.16.1");
+	map.put(751, "1.16.2");
+	map.put(753, "1.16.3");
+	map.put(754, "1.16.4/1.16.5");
     }
 }
